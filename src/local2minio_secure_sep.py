@@ -5,17 +5,16 @@ from minio.error import S3Error
 
 myhp = "192.168.1.152:9000"
 myasus = "192.168.1.153:9000"
+end_point = myasus
 
 # Determine the CA certificate path of the destination MinIO server
-minio_ca_cert = os.environ.get("MINIO_CA_CERT", "/home/wa/minio/certs/other/asus-public.crt")
-
-
-print(minio_ca_cert)
+crt_path = os.path.expanduser("~/minio/certs/")
+crt_name = "asus-public.crt"                             # ---------------- CHANGE TO DESIRED ENDPOINT SERVER'S CERTIFICATE ----------------
+minio_ca_cert = os.path.join(crt_path, crt_name)
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
 
-print(f"Using CA cert: {minio_ca_cert}")
 
 # Create HTTP client with custom CA certificate
 http_client = urllib3.PoolManager(
@@ -26,7 +25,7 @@ http_client = urllib3.PoolManager(
 # 1. Initialize MinIO client
 # Replace with your actual endpoint, access key, and secret key
 minio_client = Minio(
-    myasus,
+    end_point,
     access_key="minioadmin",
     secret_key="minioadmin",
     secure=True,

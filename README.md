@@ -8,6 +8,17 @@
 - [Deploy Minio KMS as container](#deploy-minio-kms-as-container)
 - [Enable server side encryption with minio KMS](#enable-data-encryption-server-side-encryption---sse)
 
+## MinIO data drive structure
+```bash
+minio/
+├── certs
+│   ├── CAs
+│   ├── private.key
+│   └── public.crt
+├── data # bucket store here
+└── minio.license
+```
+
 ## Install docker
 1. Set up Docker's `apt` repository
     ```bash
@@ -220,8 +231,8 @@ There are 2 ways to install
     pip install minio --break-system-packages
     ```
 
-## Enable data encryption (Server side encryption - SSE)
-<!-- 1. Insatll `KMS` image
+<!-- ## Enable data encryption (Server side encryption - SSE)
+ 1. Insatll `KMS` image
 ```bash
 sudo docker pull minio/kes
 ```

@@ -3,16 +3,19 @@ import urllib3
 from minio import Minio
 from minio.error import S3Error
 
-myhp = "192.168.1.152:9000"
-myasus = "192.168.1.153:9000"
+myhp = "192.168.1.152:9000"                    # ---------------- CHANGE TO DESIRED SERVER IP ----------------
+myasus = "192.168.1.153:9000"                  
+
+end_point = myhp                               # ---------------- CHANGE TO DESIRED ENDPOINT SERVER ----------------   
 
 # Determine the CA certificate path of the destination MinIO server
-minio_ca_cert = os.environ.get("MINIO_CA_CERT", "/home/wa/minio/certs/public.crt")
+crt_path = os.path.expanduser("~/minio/certs/")                         
+crt_name = "public.crt"                        # ---------------- CHANGE TO DESIRED ENDPOINT SERVER'S CERTIFICATE ----------------
+minio_ca_cert = os.path.join(crt_path, crt_name)
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
 
-print(f"Using CA cert: {minio_ca_cert}")
 
 # Create HTTP client with custom CA certificate
 http_client = urllib3.PoolManager(
@@ -23,7 +26,7 @@ http_client = urllib3.PoolManager(
 # 1. Initialize MinIO client
 # Replace with your actual endpoint, access key, and secret key
 minio_client = Minio(
-    myhp,
+    end_point,
     access_key="minioadmin",
     secret_key="minioadmin",
     secure=True,
@@ -33,8 +36,8 @@ minio_client = Minio(
 
 # 2. Define your local source and destination bucket
 # Adjust the local_root to match your ~/dist/files/ location
-local_root = os.path.expanduser("~/dist/files/")
-bucket = "ccr-data-drive"
+local_root = os.path.expanduser("~/dist/files/")        # ---------------- CHANGE TO DESIRED LOCAL DIRECTORY ----------------
+bucket = "ccr-data-drive"                               # ---------------- CHANGE TO DESIRED BUCKET ----------------
 
 # Create bucket if it doesn't exist
 try:

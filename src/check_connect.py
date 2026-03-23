@@ -5,7 +5,10 @@ import os
 myhp = "192.168.1.152:9000"
 
 # Determine the CA certificate path of upstream MinIO server
-minio_ca_cert = os.environ.get("MINIO_CA_CERT", "/home/wa/minio/certs/public.crt")
+crt_path = os.path.expanduser("~/minio/certs/")
+crt_name = "public.crt"                        
+minio_ca_cert = os.path.join(crt_path, crt_name)
+
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
@@ -22,9 +25,9 @@ minio_client = Minio(
     myhp,
     access_key="minioadmin",
     secret_key="minioadmin",
-    secure=True,           # ✓ Uses HTTPS
-    cert_check=True,       # ✓ Verifies certificate
-    http_client=http_client,  # ✓ Uses custom CA cert
+    secure=True,                # Uses HTTPS
+    cert_check=True,            # Verifies certificate
+    http_client=http_client,    # Uses custom CA cert
 )
 
 # Test connection by listing buckets
