@@ -124,7 +124,7 @@
 
 5. Run MinIO AIStor with TLS 
     ```bash
-    docker run -dt                                             \
+    sudo docker run -dt                                             \
     -p 9000:9000 -p 9001:9001                                \
     -v $HOME/minio/data:/mnt/data                            \
     -v $HOME/minio/certs:/etc/minio/certs                    \
