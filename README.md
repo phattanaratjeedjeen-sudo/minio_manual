@@ -231,8 +231,52 @@ There are 2 ways to install
     pip install minio --break-system-packages
     ```
 
-<!-- ## Enable data encryption (Server side encryption - SSE)
- 1. Insatll `KMS` image
+## Enable data encryption (Server side encryption - SSE)
+1. Generate your Master Key
+    ```bash
+    head -c 32 /dev/urandom | base64
+    ```
+
+2. Stop and remove container
+    ```bash
+    sudo docker stop aistor-server
+    sudo docker rm aistor-server
+    ```
+
+3. Run the Encrypted MinIO Container
+    ```bash
+    sudo docker run -dt \
+    -p 9000:9000 -p 9001:9001 \
+    -v $HOME/minio/data:/mnt/data \
+    -v $HOME/minio/certs:/etc/minio/certs \
+    -v $HOME/minio/minio.license:/minio.license \
+    -e "MINIO_KMS_SECRET_KEY=my-master-key:YOUR_KEY_HERE" \
+    --name "aistor-server" \
+    quay.io/minio/aistor/minio:latest minio server /mnt/data \
+    --license /minio.license \
+    --certs-dir /etc/minio/certs
+    ```
+    `YOUR_KEY_HERE` from step 1
+
+4. Enable "Auto-Encryption" for your Buckets
+    ```bash
+    # Replace 'myasus' with your alias and 'my-bucket' with your bucket name
+    mc encrypt set sse-kms my-master-key <alias>/<bucket>
+    ```
+
+5. Check
+    ```bash
+    # upload file
+    mc cp <file> <alias>/<bucket>/
+
+    mc stat <alias>/<bucket>/<file>
+    ```
+    **Look for**: A line in the output that says `Encryption: SSE-KMS`.
+
+    >note: 
+    >previous uploaded files befare enable SSE are not automatically encrypted.
+    
+ <!-- 1. Insatll `KMS` image
 ```bash
 sudo docker pull minio/kes
 ```
@@ -250,9 +294,7 @@ sudo mv kes /usr/local/bin/
 
 # check
 kes --version
-```
-
-3.  -->
+``` -->
 
 
 <!-- ## Deploy Minio KMS as container
