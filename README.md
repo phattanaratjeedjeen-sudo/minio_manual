@@ -5,19 +5,8 @@
 - [Install minio as container](#install-minio-as-container)
 - [Enable network encryption](#enable-network-encryption)
 - [Install python SDKs](#install-python-sdks)
-- [Deploy Minio KMS as container](#deploy-minio-kms-as-container)
-- [Enable server side encryption with minio KMS](#enable-data-encryption-server-side-encryption---sse)
-
-## MinIO data drive structure
-```bash
-minio/
-├── certs
-│   ├── CAs
-│   ├── private.key
-│   └── public.crt
-├── data # bucket store here
-└── minio.license
-```
+- [Enable server side encryption](#enable-data-encryption-server-side-encryption---sse)
+- [Connect beteen 2 machines](#connect-beteen-2-machines)
 
 ## Install docker
 1. Set up Docker's `apt` repository
@@ -158,6 +147,10 @@ minio/
     When you start the container, the CA certificates are mounted to `/etc/minio/certs/CAs` and automatically trusted by MinIO AIStor.
 
 7. Install mc
+
+    >note: 
+    >In this case `mc` is used as testing tool
+
     ```bash
     curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-amd64/mc -o mc
     chmod +x ./mc
@@ -176,41 +169,77 @@ minio/
     ```bash
     mc alias set <alias_name> https://<server IP>:9000 minioadmin minioadmin
     ```
+
+    ```bash
+
+    # if problem occur
+    mc alias set <alias_name> https://<server IP>:9000 minioadmin minioadmin --insecure
+    ```
+
     - `alias_name` : can name it what ever you want but if the same name is set, last name will be keep.
     - `server IP` : IP of server that you want to connect.
 
 9. Test connection
     ```bash
-    mc admin info <alias_name>
+    mc --debug admin info <alias_name>
     ```
 
     output should be
     ```bash
-    ╭───────────────────────────────────────────────╮                                                         
-    │  MinIO Cluster: ● Online  │  Edition: AIStor  │                                                         
-    ╰───────────────────────────────────────────────╯                                                         
-                                                                                                            
-    Capacity                                                                                                  
-    ╭──────────────────────────────────────────────────────────────────────────────╮                          
-    │  Used:  25 GiB / 207 GiB  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  12.2%  │                          
-    │  Free:  182 GiB                                                              │                          
-    ╰──────────────────────────────────────────────────────────────────────────────╯                          
-                                                                                                            
-    Servers                                                                                                   
-    ╭────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-    │  ●  localhost:9000★  │  Uptime: 1 hour   │  Drives: 1/1  │  Pool: 1  │  Version: 2026-03-20T23:11:32Z  │
-    ╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-                                                                                                            
-    Pools                                                                                                     
-    ╭─────────────────────────────────────────────────────╮                                                   
-    │  Pool  │  Usage            │  Stripe Size  │  Sets  │                                                   
-    │  1st   │  12.2% (207 GiB)  │  1            │  1     │                                                   
-    ╰─────────────────────────────────────────────────────╯                                                   
-                                                                                                            
-    Data Summary                                                                                              
-    ╭───────────────────────────────────────────────────────────────────────────────────────────────────────╮ 
-    │  Used: 0 B  │  Objects: 0  │  Delete Markers: 0  │  Drives: 1 online / 0 offline  │  Erasure Code: 0  │ 
-    ╰───────────────────────────────────────────────────────────────────────────────────────────────────────╯ 
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │ GET /minio/admin/v4/info?metrics=false&no-cache=false HTTP/1.1
+    │ Host: 192.168.1.152:9000
+    │ User-Agent: MinIO (linux; amd64) madmin-go/4.0.6 mc/RELEASE.2026-03-12T04-18-55Z
+    │ Accept-Encoding: zstd,gzip
+    │ Authorization: AWS4-HMAC-SHA256 Credential=minioadmin/20260324//s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=**REDACTED**
+    │ X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    │ X-Amz-Date: 20260324T043121Z
+    ├─────────────────────────────────────────────────────────────────────────────────┤
+    │ HTTP/1.1 200 OK
+    │ Transfer-Encoding: chunked
+    │ Content-Encoding: zstd
+    │ Content-Type: application/json
+    │ Date: Tue, 24 Mar 2026 04:31:21 GMT
+    │ Server: MinIO AIStor
+    │ Strict-Transport-Security: max-age=31536000; includeSubDomains
+    │ Vary: Origin
+    │ Vary: Accept-Encoding
+    │ X-Amz-Id-2: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8
+    │ X-Amz-Request-Id: 189FACB733A66A4B
+    │ X-Content-Type-Options: nosniff
+    │ X-Xss-Protection: 1; mode=block
+    │
+    │ TLS Certificate found:
+    │  >> Organization: Certgen Development
+    │  >> Expires: 2027-03-23 13:33:20 +0000 UTC
+    │
+    │ Response Time: 193.219µs
+    └─────────────────────────────────────────────────────────────────────────────────┘
+    ╭───────────────────────────────────────────────╮                                                                           
+    │  MinIO Cluster: ● Online  │  Edition: AIStor  │                                                                           
+    ╰───────────────────────────────────────────────╯                                                                           
+                                                                                                                                
+    Capacity                                                                                                                    
+    ╭──────────────────────────────────────────────────────────────────────────────╮                                            
+    │  Used:  28 GiB / 207 GiB  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  13.3%  │                                            
+    │  Free:  180 GiB                                                              │                                            
+    ╰──────────────────────────────────────────────────────────────────────────────╯                                            
+                                                                                                                                
+    Servers                                                                                                                     
+    ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮           
+    │  ●  192.168.1.152:9000★  │  Uptime: 2 minutes   │  Drives: 1/1  │  Pool: 1  │  Version: 2026-03-20T23:11:32Z  │           
+    ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────╯           
+                                                                                                                                
+    Pools                                                                                                                       
+    ╭─────────────────────────────────────────────────────╮                                                                     
+    │  Pool  │  Usage            │  Stripe Size  │  Sets  │                                                                     
+    │  1st   │  13.3% (207 GiB)  │  1            │  1     │                                                                     
+    ╰─────────────────────────────────────────────────────╯                                                                     
+                                                                                                                                
+    Data Summary                                                                                                                
+    ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+    │  Used: 18 KiB  │  Buckets: 2  │  Objects: 30  │  Delete Markers: 0  │  Drives: 1 online / 0 offline  │  Erasure Code: 0  │
+    ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
     ```
 
 
@@ -228,12 +257,13 @@ There are 2 ways to install
 
 2. Directly install
     ```bash
-    pip install minio --break-system-packages
+    pip3 install minio 
     ```
 
 ## Enable data encryption (Server side encryption - SSE)
 1. Generate your Master Key
     ```bash
+    # remember this key
     head -c 32 /dev/urandom | base64
     ```
 
@@ -256,6 +286,34 @@ There are 2 ways to install
     --license /minio.license \
     --certs-dir /etc/minio/certs
     ```
+
+    ```bash
+    sudo docker run -dt \
+    -p 9000:9000 -p 9001:9001 \
+    -v $HOME/minio/data:/mnt/data \
+    -v $HOME/minio/certs:/etc/minio/certs \
+    -v $HOME/minio/minio.license:/minio.license \
+    -e "MINIO_KMS_SECRET_KEY=my-master-key:0lMFx0poBC7HzsvE4zV/UhPKOFIy0pEf1aF8TjYmaHM=" \
+    --name "aistor-server" \
+    quay.io/minio/aistor/minio:latest minio server /mnt/data \
+    --license /minio.license \
+    --certs-dir /etc/minio/certs
+    ```
+
+    ```bash
+    # asus
+    sudo docker run -dt \
+    -p 9000:9000 -p 9001:9001 \
+    -v $HOME/minio/data:/mnt/data \
+    -v $HOME/minio/certs:/etc/minio/certs \
+    -v $HOME/minio/minio.license:/minio.license \
+    -e "MINIO_KMS_SECRET_KEY=my-master-key:elUxTCiLqpr9WUrUVLs75YGtz3zVKHXo2DvTusFgKWs=" \
+    --name "aistor-server" \
+    quay.io/minio/aistor/minio:latest minio server /mnt/data \
+    --license /minio.license \
+    --certs-dir /etc/minio/certs
+    ```
+
     `YOUR_KEY_HERE` from step 1
 
 4. Enable "Auto-Encryption" for your Buckets
@@ -275,7 +333,48 @@ There are 2 ways to install
 
     >note: 
     >previous uploaded files befare enable SSE are not automatically encrypted.
-    
+
+
+## Connect beteen 2 machines
+### MinIO data drive structure
+**Before** ,both pc1 and pc2 have same minio data drive structure
+```bash
+~/minio/
+    ├── certs
+    │   ├── CAs
+    │   ├── private.key
+    │   └── public.crt
+    ├── data # bucket store here
+    └── minio.license
+```
+### Procedure
+1. Certificate exchange
+    **At pc1** copy `private.key` and `public.crt` to `~/minio/certs/` of **pc2**
+
+    Check
+
+    ```bash
+    # @ pc1
+    ~/minio/
+        ├── certs
+        │   ├── CAs
+        │   ├── private.key
+        │   └── public.crt
+        ├── data 
+        └── minio.license
+    ```
+
+    ```bash
+    # @ pc2
+    ~/minio/
+        ├── certs
+        │   ├── CAs 
+        │   ├── private.key # come from pc1
+        │   └── public.crt  # come from pc1
+        ├── data 
+        └── minio.license
+    ```
+
  <!-- 1. Insatll `KMS` image
 ```bash
 sudo docker pull minio/kes

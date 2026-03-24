@@ -3,15 +3,17 @@ import urllib3
 from minio import Minio
 from minio.error import S3Error
 
-myhp = "192.168.1.152:9000"                         # ---------------- CHANGE TO DESIRED SERVER IP ----------------
-myasus = "192.168.1.153:9000"
+# ==================== Configuration ====================
+minio_endpoint = "192.168.1.152:9000"   
+access_key = "minioadmin"
+secret_key = "minioadmin"
+bucket_name = "my-bucket"     
+local_root = os.path.expanduser("~/from_minio/")          
 
-end_point = myhp                                    # ---------------- CHANGE TO DESIRED ENDPOINT SERVER ----------------
 
-# Determine the CA certificate path of upstream MinIO server
-crt_path = os.path.expanduser("~/minio/certs/")
-crt_name = "public.crt"                             # ---------------- CHANGE TO DESIRED ENDPOINT SERVER'S CERTIFICATE ----------------
-minio_ca_cert = os.path.join(crt_path, crt_name)
+# CA certificate configuration
+minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")    
+
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
@@ -23,26 +25,24 @@ http_client = urllib3.PoolManager(
     ca_certs=minio_ca_cert,
 )
 
-# 1. Initialize MinIO client
+# Initialize MinIO client
 minio_client = Minio(
-    end_point,
-    access_key="minioadmin",
-    secret_key="minioadmin",
+    minio_endpoint,
+    access_key=access_key,
+    secret_key=secret_key,
     secure=True,
     cert_check=True,
     http_client=http_client,
 )
 
-# 2. Define your destination and source bucket
-local_root = os.path.expanduser("~/m2l/dist/files/")    # ---------------- CHANGE TO DESIRED LOCAL DIRECTORY ----------------
-bucket = "ccr-data-drive"                               # ---------------- CHANGE TO DESIRED BUCKET ----------------
 
 # Create local directory if it doesn't exist
 os.makedirs(local_root, exist_ok=True)
 
+
 # List and download all objects from the bucket
 try:
-    objects = minio_client.list_objects(bucket, recursive=True)
+    objects = minio_client.list_objects(bucket_name, recursive=True)
     for obj in objects:
         object_name = obj.object_name
         local_file_path = os.path.join(local_root, object_name)
@@ -52,7 +52,7 @@ try:
         
         try:
             print(f"Downloading {object_name} to {local_file_path}...")
-            minio_client.fget_object(bucket, object_name, local_file_path)
+            minio_client.fget_object(bucket_name, object_name, local_file_path)
         except S3Error as err:
             print(f"Error occurred while downloading {object_name}: {err}")
     

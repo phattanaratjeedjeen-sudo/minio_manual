@@ -3,15 +3,17 @@ import urllib3
 from minio import Minio
 from minio.error import S3Error
 
-myhp = "192.168.1.152:9000"                    # ---------------- CHANGE TO DESIRED SERVER IP ----------------
-myasus = "192.168.1.153:9000"                  
+# ==================== Configuration ====================
+minio_endpoint = "192.168.1.152:9000"   
+access_key = "minioadmin"
+secret_key = "minioadmin"
+bucket_name = "my-bucket"     
+local_root = os.path.expanduser("~/dist/files/")          
 
-end_point = myhp                               # ---------------- CHANGE TO DESIRED ENDPOINT SERVER ----------------   
 
-# Determine the CA certificate path of the destination MinIO server
-crt_path = os.path.expanduser("~/minio/certs/")                         
-crt_name = "public.crt"                        # ---------------- CHANGE TO DESIRED ENDPOINT SERVER'S CERTIFICATE ----------------
-minio_ca_cert = os.path.join(crt_path, crt_name)
+# CA certificate configuration
+minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")    
+
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
@@ -23,27 +25,21 @@ http_client = urllib3.PoolManager(
     ca_certs=minio_ca_cert,
 )
 
-# 1. Initialize MinIO client
-# Replace with your actual endpoint, access key, and secret key
+# Initialize MinIO client
 minio_client = Minio(
-    end_point,
-    access_key="minioadmin",
-    secret_key="minioadmin",
+    minio_endpoint,
+    access_key=access_key,
+    secret_key=secret_key,
     secure=True,
     cert_check=True,
     http_client=http_client,
 )
 
-# 2. Define your local source and destination bucket
-# Adjust the local_root to match your ~/dist/files/ location
-local_root = os.path.expanduser("~/dist/files/")        # ---------------- CHANGE TO DESIRED LOCAL DIRECTORY ----------------
-bucket = "ccr-data-drive"                               # ---------------- CHANGE TO DESIRED BUCKET ----------------
-
 # Create bucket if it doesn't exist
 try:
-    if not minio_client.bucket_exists(bucket):
-        print(f"Creating bucket: {bucket}")
-        minio_client.make_bucket(bucket)
+    if not minio_client.bucket_exists(bucket_name):
+        print(f"Creating bucket: {bucket_name}")
+        minio_client.make_bucket(bucket_name)
 except Exception as err:
     err_msg = str(err)
     if "CERTIFICATE_VERIFY_FAILED" in err_msg:
@@ -85,7 +81,7 @@ for root, dirs, files in os.walk(local_root):
         try:
             print(f"Uploading {local_file_path} to {object_name}...")
             minio_client.fput_object(
-                bucket, 
+                bucket_name, 
                 object_name, 
                 local_file_path
             )
