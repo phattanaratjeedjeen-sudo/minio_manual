@@ -8,7 +8,7 @@ minio_endpoint = "192.168.1.152:9000"
 access_key = "minioadmin"
 secret_key = "minioadmin"
 bucket_name = "my-bucket"     
-local_root = os.path.expanduser("~/from_minio/")          
+local_root = os.path.expanduser("~")          
 
 
 # CA certificate configuration

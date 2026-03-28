@@ -299,21 +299,7 @@ There are 2 ways to install
     --license /minio.license \
     --certs-dir /etc/minio/certs
     ```
-
-    ```bash
-    # asus
-    sudo docker run -dt \
-    -p 9000:9000 -p 9001:9001 \
-    -v $HOME/minio/data:/mnt/data \
-    -v $HOME/minio/certs:/etc/minio/certs \
-    -v $HOME/minio/minio.license:/minio.license \
-    -e "MINIO_KMS_SECRET_KEY=my-master-key:elUxTCiLqpr9WUrUVLs75YGtz3zVKHXo2DvTusFgKWs=" \
-    --name "aistor-server" \
-    quay.io/minio/aistor/minio:latest minio server /mnt/data \
-    --license /minio.license \
-    --certs-dir /etc/minio/certs
-    ```
-
+    
     `YOUR_KEY_HERE` from step 1
 
 4. Enable "Auto-Encryption" for your Buckets

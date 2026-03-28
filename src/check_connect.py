@@ -9,7 +9,7 @@ import os
 import ssl
 
 # ==================== Configuration ====================
-minio_endpoint = "192.168.1.153:9000"   
+minio_endpoint = "192.168.1.152:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
 
@@ -18,8 +18,6 @@ minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")
 
 if not os.path.isfile(minio_ca_cert):
     raise SystemExit(f"CA certificate not found: {minio_ca_cert}")
-
-print(f"Using CA cert: {minio_ca_cert}")
 
 # Create HTTP client with custom CA certificate
 http_client = urllib3.PoolManager(
@@ -38,7 +36,7 @@ minio_client = Minio(
 
 # ==================== Test Connection ====================
 print("\n" + "=" * 60)
-print("MinIO Connection & Security Status")
+print("MinIO Connection")
 print("=" * 60)
 
 try:
@@ -48,13 +46,6 @@ try:
     print(f"  - Server: {minio_endpoint}")
     print(f"  - Status: CONNECTED")
     print(f"  - Buckets found: {len(buckets)}")
-    
-    # ==================== TLS/SSL Information ====================
-    print("\n✓ TLS/SSL SECURITY")
-    print(f"  - Protocol: HTTPS (secure=True)")
-    print(f"  - Certificate check: ENABLED")
-    print(f"  - CA certificate: {os.path.basename(minio_ca_cert)}")
-    print(f"  - Certificate path: {minio_ca_cert}")
     
     # ==================== Check SSE Status Per Bucket ====================
     print("\n✓ SERVER-SIDE ENCRYPTION (SSE) STATUS")

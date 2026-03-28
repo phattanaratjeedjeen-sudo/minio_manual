@@ -14,7 +14,7 @@ secret_key = "minioadmin"
 bucket_name = "my-bucket"
 
 # Local file to upload
-filename = "SSE_key.txt"
+filename = "ip_note.txt"
 local_file_path = os.path.expanduser(f"~/{filename}")  
 object_name = filename    
 

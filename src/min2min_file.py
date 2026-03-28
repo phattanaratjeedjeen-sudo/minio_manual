@@ -8,7 +8,7 @@ downstream_ip = "192.168.1.153:9000"
 access_key = "minioadmin"
 secret_key = "minioadmin"
 bucket_name = "my-bucket"
-object_name = "SSE_key.txt"
+object_name = "ip_note.txt"
 
 # CA certificate configuration
 minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")    
