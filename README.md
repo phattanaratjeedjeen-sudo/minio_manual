@@ -1,388 +1,30 @@
 # minio_manual
 
+<!-- 
 ## Table of Conetents
-- [Install docker](#install-docker)
-- [Install minio as container](#install-minio-as-container)
-- [Enable network encryption](#enable-network-encryption)
-- [Install python SDKs](#install-python-sdks)
-- [Enable server side encryption](#enable-data-encryption-server-side-encryption---sse)
-- [Connect beteen 2 machines](#connect-beteen-2-machines)
 
-## Install docker
-1. Set up Docker's `apt` repository
+1. Insatll `KMS` image
     ```bash
-    # Add Docker's official GPG key:
-    sudo apt update
-    sudo apt install ca-certificates curl
-    sudo install -m 0755 -d /etc/apt/keyrings
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-    sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-    # Add the repository to Apt sources:
-    sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
-    Types: deb
-    URIs: https://download.docker.com/linux/ubuntu
-    Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-    Components: stable
-    Signed-By: /etc/apt/keyrings/docker.asc
-    EOF
-
-    sudo apt update
+    sudo docker pull minio/kes
     ```
-
-2. Install docker packages
-    ```bash
-    sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    ```
-
-3. Verify installation successful
-    ```bash
-    sudo docker run hello-world
-    ```
-
-    Output should be
-    ```bash
-    Hello from Docker!
-    This message shows that your installation appears to be working correctly.
-
-    To generate this message, Docker took the following steps:
-    1. The Docker client contacted the Docker daemon.
-    2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
-        (amd64)
-    3. The Docker daemon created a new container from that image which runs the
-        executable that produces the output you are currently reading.
-    4. The Docker daemon streamed that output to the Docker client, which sent it
-        to your terminal.
-
-    To try something more ambitious, you can run an Ubuntu container with:
-    $ docker run -it ubuntu bash
-
-    Share images, automate workflows, and more with a free Docker ID:
-    https://hub.docker.com/
-
-    For more examples and ideas, visit:
-    https://docs.docker.com/get-started/
-    ```
-
-
-## Install minio as container
-1. Pull the latest stable image of AIStor Server 
-    ```bash
-    sudo docker pull quay.io/minio/aistor/minio
-    ```
-
-2. Create directories for data and certificates. The following example uses `$HOME/minio` as the base path.
-    ```bash
-    mkdir -p $HOME/minio/data $HOME/minio/certs
-    ```
-
-3. Retrieve your license file 
-    - go to [Minio pricing page](https://min.io/pricing?_gl=1*bglanp*_up*MQ..*_ga*MTU5ODUxOTQ0OC4xNzc0MTA4Nzcx*_ga_EHESQ21MLT*czE3NzQxMDg3NzAkbzEkZzAkdDE3NzQxMDg3NzAkajYwJGwwJGgw)
-
-    - Click `Get Started` at `Free` tier. Give required information and the license will be sent to inserted email
-
-4. Move licese to `$HOME/minio`
-    ```bash
-    mv ~/Downloads/minio.license ~/minio/
-    ```
-
-5. Check
-    ```bash
-    ls ~/minio/
-    # output should be
-    # certs  data  minio.license
-    ```
-
-## Enable Network Encryption
-1. Load binary file for linux AMD64
-    ```bash
-    ~
-    curl -L https://github.com/minio/certgen/releases/latest/download/certgen-linux-amd64 -o certgen
-    ```
-
-2. Make it executable
-    ```bash
-    sudo chmod +x certgen
-    ```
-
-3. Move to system path (optional)
-    ```bash
-    sudo mv certgen /usr/local/bin/
-    ```
-
-4. Generate certificates 
-    ```bash
-    cd ~/minio/certs
-    certgen -host "localhost,127.0.0.1, <additional IP>"
-    ```
-    `additional IP` : minio's server IP
-    ```bash
-    ls
-    # output should be
-    # private.key  public.crt
-    ```
-
-5. Run MinIO AIStor with TLS 
-    ```bash
-    sudo docker run -dt                                             \
-    -p 9000:9000 -p 9001:9001                                \
-    -v $HOME/minio/data:/mnt/data                            \
-    -v $HOME/minio/certs:/etc/minio/certs                    \
-    -v $HOME/minio/minio.license:/minio.license              \
-    --name "aistor-server"                                   \
-    quay.io/minio/aistor/minio:latest minio server /mnt/data \
-    --license /minio.license                                 \
-    --certs-dir /etc/minio/certs
-    ```
-
-6. Trust additional certificate authorities 
-
-    If you need MinIO AIStor to trust certificates from additional certificate authorities, such as when connecting to `MinIO KMS` with self-signed certificates, place the CA certificates in the `$HOME/minio/certs/CAs` directory.
-
-    ```bash
-    mkdir -p $HOME/minio/certs/CAs
-    cp /path/to/ca-certificate.crt $HOME/minio/certs/CAs/
-    ```
-
-    When you start the container, the CA certificates are mounted to `/etc/minio/certs/CAs` and automatically trusted by MinIO AIStor.
-
-7. Install mc
-
-    >note: 
-    >In this case `mc` is used as testing tool
-
-    ```bash
-    curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-amd64/mc -o mc
-    chmod +x ./mc
-    sudo mv ./mc /usr/local/bin/
-    mc --version
-    ```
-
-8. Connect using HTTPS 
-    Configure mc to trust the certificate 
-    ```bash
-    mkdir -p ~/.mc/certs/CAs
-    cp $HOME/minio/certs/public.crt ~/.mc/certs/CAs/
-    ```
-
-    Then create an alias using HTTPS:
-    ```bash
-    mc alias set <alias_name> https://<server IP>:9000 minioadmin minioadmin
-    ```
-
-    ```bash
-
-    # if problem occur
-    mc alias set <alias_name> https://<server IP>:9000 minioadmin minioadmin --insecure
-    ```
-
-    - `alias_name` : can name it what ever you want but if the same name is set, last name will be keep.
-    - `server IP` : IP of server that you want to connect.
-
-9. Test connection
-    ```bash
-    mc --debug admin info <alias_name>
-    ```
-
-    output should be
-    ```bash
-    ┌─────────────────────────────────────────────────────────────────────────────────┐
-    │ GET /minio/admin/v4/info?metrics=false&no-cache=false HTTP/1.1
-    │ Host: 192.168.1.152:9000
-    │ User-Agent: MinIO (linux; amd64) madmin-go/4.0.6 mc/RELEASE.2026-03-12T04-18-55Z
-    │ Accept-Encoding: zstd,gzip
-    │ Authorization: AWS4-HMAC-SHA256 Credential=minioadmin/20260324//s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=**REDACTED**
-    │ X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-    │ X-Amz-Date: 20260324T043121Z
-    ├─────────────────────────────────────────────────────────────────────────────────┤
-    │ HTTP/1.1 200 OK
-    │ Transfer-Encoding: chunked
-    │ Content-Encoding: zstd
-    │ Content-Type: application/json
-    │ Date: Tue, 24 Mar 2026 04:31:21 GMT
-    │ Server: MinIO AIStor
-    │ Strict-Transport-Security: max-age=31536000; includeSubDomains
-    │ Vary: Origin
-    │ Vary: Accept-Encoding
-    │ X-Amz-Id-2: dd9025bab4ad464b049177c95eb6ebf374d3b3fd1af9251148b658df7ac2e3e8
-    │ X-Amz-Request-Id: 189FACB733A66A4B
-    │ X-Content-Type-Options: nosniff
-    │ X-Xss-Protection: 1; mode=block
-    │
-    │ TLS Certificate found:
-    │  >> Organization: Certgen Development
-    │  >> Expires: 2027-03-23 13:33:20 +0000 UTC
-    │
-    │ Response Time: 193.219µs
-    └─────────────────────────────────────────────────────────────────────────────────┘
-    ╭───────────────────────────────────────────────╮                                                                           
-    │  MinIO Cluster: ● Online  │  Edition: AIStor  │                                                                           
-    ╰───────────────────────────────────────────────╯                                                                           
-                                                                                                                                
-    Capacity                                                                                                                    
-    ╭──────────────────────────────────────────────────────────────────────────────╮                                            
-    │  Used:  28 GiB / 207 GiB  [█████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]  13.3%  │                                            
-    │  Free:  180 GiB                                                              │                                            
-    ╰──────────────────────────────────────────────────────────────────────────────╯                                            
-                                                                                                                                
-    Servers                                                                                                                     
-    ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮           
-    │  ●  192.168.1.152:9000★  │  Uptime: 2 minutes   │  Drives: 1/1  │  Pool: 1  │  Version: 2026-03-20T23:11:32Z  │           
-    ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────╯           
-                                                                                                                                
-    Pools                                                                                                                       
-    ╭─────────────────────────────────────────────────────╮                                                                     
-    │  Pool  │  Usage            │  Stripe Size  │  Sets  │                                                                     
-    │  1st   │  13.3% (207 GiB)  │  1            │  1     │                                                                     
-    ╰─────────────────────────────────────────────────────╯                                                                     
-                                                                                                                                
-    Data Summary                                                                                                                
-    ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-    │  Used: 18 KiB  │  Buckets: 2  │  Objects: 30  │  Delete Markers: 0  │  Drives: 1 online / 0 offline  │  Erasure Code: 0  │
-    ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-    ```
-
-
-## Install python SDKs
-There are 2 ways to install
-1. Virtual environment
-    ```bash
-    # create environment
-    python3 -m venv minio-env
-    # active it
-    source minio-env/bin/activate
-    # install lib
-    pip install minio
-    ```
-
-2. Directly install
-    ```bash
-    pip3 install minio 
-    ```
-
-## Enable data encryption (Server side encryption - SSE)
-1. Generate your Master Key
-    ```bash
-    # remember this key
-    head -c 32 /dev/urandom | base64
-    ```
-
-2. Stop and remove container
-    ```bash
-    sudo docker stop aistor-server
-    sudo docker rm aistor-server
-    ```
-
-3. Run the Encrypted MinIO Container
-    ```bash
-    sudo docker run -dt \
-    -p 9000:9000 -p 9001:9001 \
-    -v $HOME/minio/data:/mnt/data \
-    -v $HOME/minio/certs:/etc/minio/certs \
-    -v $HOME/minio/minio.license:/minio.license \
-    -e "MINIO_KMS_SECRET_KEY=my-master-key:YOUR_KEY_HERE" \
-    --name "aistor-server" \
-    quay.io/minio/aistor/minio:latest minio server /mnt/data \
-    --license /minio.license \
-    --certs-dir /etc/minio/certs
-    ```
-
-    ```bash
-    sudo docker run -dt \
-    -p 9000:9000 -p 9001:9001 \
-    -v $HOME/minio/data:/mnt/data \
-    -v $HOME/minio/certs:/etc/minio/certs \
-    -v $HOME/minio/minio.license:/minio.license \
-    -e "MINIO_KMS_SECRET_KEY=my-master-key:0lMFx0poBC7HzsvE4zV/UhPKOFIy0pEf1aF8TjYmaHM=" \
-    --name "aistor-server" \
-    quay.io/minio/aistor/minio:latest minio server /mnt/data \
-    --license /minio.license \
-    --certs-dir /etc/minio/certs
-    ```
-    
-    `YOUR_KEY_HERE` from step 1
-
-4. Enable "Auto-Encryption" for your Buckets
-    ```bash
-    # Replace 'myasus' with your alias and 'my-bucket' with your bucket name
-    mc encrypt set sse-kms my-master-key <alias>/<bucket>
-    ```
-
-5. Check
-    ```bash
-    # upload file
-    mc cp <file> <alias>/<bucket>/
-
-    mc stat <alias>/<bucket>/<file>
-    ```
-    **Look for**: A line in the output that says `Encryption: SSE-KMS`.
-
-    >note: 
-    >previous uploaded files befare enable SSE are not automatically encrypted.
-
-
-## Connect beteen 2 machines
-### MinIO data drive structure
-**Before** ,both pc1 and pc2 have same minio data drive structure
-```bash
-~/minio/
-    ├── certs
-    │   ├── CAs
-    │   ├── private.key
-    │   └── public.crt
-    ├── data # bucket store here
-    └── minio.license
-```
-### Procedure
-1. Certificate exchange
-    **At pc1** copy `private.key` and `public.crt` to `~/minio/certs/` of **pc2**
-
-    Check
-
-    ```bash
-    # @ pc1
-    ~/minio/
-        ├── certs
-        │   ├── CAs
-        │   ├── private.key
-        │   └── public.crt
-        ├── data 
-        └── minio.license
-    ```
-
-    ```bash
-    # @ pc2
-    ~/minio/
-        ├── certs
-        │   ├── CAs 
-        │   ├── private.key # come from pc1
-        │   └── public.crt  # come from pc1
-        ├── data 
-        └── minio.license
-    ```
-
- <!-- 1. Insatll `KMS` image
-```bash
-sudo docker pull minio/kes
-```
 
 2. Install the KES CLI (Linux amd64)
-```bash
-# Download the KES binary
-curl -L https://github.com/minio/kes/releases/latest/download/kes-linux-amd64 -o kes
+    ```bash
+    # Download the KES binary
+    curl -L https://github.com/minio/kes/releases/latest/download/kes-linux-amd64 -o kes
 
-# Make it executable
-chmod +x kes
+    # Make it executable
+    chmod +x kes
 
-# Move it to your system path
-sudo mv kes /usr/local/bin/
+    # Move it to your system path
+    sudo mv kes /usr/local/bin/
 
-# check
-kes --version
-``` -->
+    # check
+    kes --version
+    ```
 
 
-<!-- ## Deploy Minio KMS as container
+ ## Deploy Minio KMS as container
 1. Pull the latest stable image of MinIO KMS 
     ```bash
     sudo docker pull quay.io/minio/aistor/minkms
@@ -450,31 +92,7 @@ kes --version
     API Key        k1:bZIISelEX21ipB0mKJMO0wGQ-xcEDJgLkN6Oz96EziQ
 
     => Server is up and running...
-    ```
-
-    You can optionally add the `run -d` flag to run the container in the background (detached mode).
-    ```bash
-    # delete previous container
-    sudo docker rm minio-kms
-
-    sudo docker run -d \
-    --name minio-kms \
-    -p 7373:7373 \
-    -v ${HOME}/minkms/certs:/etc/minkms/certs \
-    -v ${HOME}/minkms/config.yaml:/etc/minkms/config.yaml \
-    -v ${HOME}/minkms/data:/mnt/minio-kms \
-    --env-file ${HOME}/minkms/minkms.env \
-    quay.io/minio/aistor/minkms:latest \
-    server /mnt/minio-kms --config /etc/minkms/config.yaml
-    ```
-
-    The output includes the root API Key as `k1:VALUE`. If you run the container in a detached mode, use the `docker logs` command to retrieve the API key. Save the value to a secure location for use in the next steps.
-    ```bash
-    sudo docker logs minio-kms
-    ```
-
-    >note:
-    >`VALUE` is used in later step
+    ``
 
 7. Install MinIO KMS Server (`minkms` binary)
     ```bash
@@ -539,18 +157,7 @@ kes --version
 
     This is the only time it is shown. Keep it secret and secure!
 
-    Your API key's identity:
-
-    h1:Vic9BzjKXEheV-bgEy2INHJt56TepoTZ_4Y32IqE9Ok
-
-    The identity is not a secret and can be shared securely.
-    Peers need your identity in order to verify your API key.
-
-    This identity can be re-computed again via:
-
-    $ minkms identity k2:bQUODAKbVSj2PYWP5rBWTvuVnAbS7ktaAs2XsGScRwI
-
-    Added identity to server successfully.
+    Y
     ```
     
 
@@ -573,4 +180,424 @@ kes --version
     yq --version
     ```
 
-### Prodecure -->
+### Prodecure  -->
+
+
+## Deploy MinIO on linux
+1. Install minio server
+    ```bash
+    # for AMD64
+    curl --progress-bar -L dl.min.io/aistor/minio/release/linux-amd64/minio.deb -o minio.deb
+    sudo dpkg -i minio.deb
+    ```
+
+2.  Retrieve your license file 
+
+    Get lincese [here](https://www.min.io/pricing)
+
+    ```bash
+    sudo mkdir /opt/minio
+    sudo touch /opt/minio/minio.license
+    sudo chown -R minio-user:minio-user /opt/minio
+    ```
+
+3.  Create the directory for the data 
+    ```bash
+    sudo mkdir -p /mnt/drive-1/minio
+    ```
+
+4. Configure the Environment File
+    ```bash
+    sudo nano /etc/default/minio
+    ```
+
+    Paste the exact configuration from the documentation:
+    ```bash
+    # Path to the license file provided by MinIO Subnet
+    MINIO_LICENSE="/opt/minio/minio.license"
+
+    # Data directory for a Single-Node Single-Drive setup
+    MINIO_VOLUMES="/mnt/drive-1/minio"
+
+    # Server options (Ports and UI)
+    MINIO_OPTS="--address :9000 --console-address :9001"
+
+    # Root credentials (Change these for production)
+    MINIO_ROOT_USER=minioadmin
+    MINIO_ROOT_PASSWORD=minioadmin
+    ```
+
+5. Ensure MinIO AIStor has ownership of associated folders and drives. 
+    ```bash
+    sudo chown -R minio-user:minio-user /opt/minio/
+    sudo chown -R minio-user:minio-user /mnt/drive-1/minio
+    ```
+
+6. Enable and start the MinIO AIStor deployment. 
+    ```bash
+    sudo systemctl enable minio.service
+    sudo systemctl start minio.service
+    ```
+
+    ```bash
+    # check
+    sudo systemctl status minio.service 
+    ```
+
+## Configure TLS Network Encryption
+1. Create the certificates and Certificate Authorities (CAs) your environment requires.
+
+2. Create the appropriate directories for your certificates and CAs.
+    ```bash
+    cd /opt/minio/
+    sudo mkdir CAs
+    sudo mkdir certs
+    ```
+
+3. Set the ownership of these directories to `minio-user`
+    ```bash
+    sudo chown -R minio-user:minio-user /opt/minio/certs
+    ```
+
+4. Add the default certificates to the `/certs` directory. At least one `private.key` and `public.crt` must be placed at the root of the `certs` directory, to provide the default certificate.
+    ```bash
+    /certs
+        private.key
+        public.crt
+    ```
+
+5. Modify the environment file at `/etc/default/minio`
+    ```bash
+    sudo gedit /etc/default/minio 
+    ```
+
+    copy and paste
+    ```bash
+    # 1. Lincese
+    MINIO_LICENSE="/opt/minio/minio.license"
+
+    # 2. Data Drive Directory
+    MINIO_VOLUMES="/mnt/drive-1/minio"
+
+    # 3. Network, Certificates
+    MINIO_OPTS="--address :9000 --console-address :9001 --certs-dir /opt/minio/certs"
+
+    # 4. Root Credentials 
+    MINIO_ROOT_USER=minioadmin
+    MINIO_ROOT_PASSWORD=minioadmin
+
+    # 5. Server URL
+    MINIO_SERVER_URL="https://192.168.1.152:9000"
+    ```
+
+6. Restart MinIO
+    ```bash
+    sudo systemctl restart minio.service 
+    ```
+
+## Install MinIO KMS on Linux
+
+1.  Create a MinIO KMS system user and group
+    ```bash
+    sudo groupadd -r minkms-user
+    sudo useradd -M -r -g minkms-user minkms-user
+    ```
+
+2. Create a directory structure for KMS files and configurations
+    ```bash
+    sudo mkdir -p /etc/minkms/certs/CAs /etc/minkms/config /mnt/minio-kms
+    sudo touch /etc/default/minkms
+    ```
+    The command creates the following structure:
+    ```bash
+    /etc/minkms
+        /certs             # Directory for TLS certificates
+            /CAs           # Certificate Authority files for client verification
+        /config            # KMS configurations
+
+    /mnt/minio-kms         # Dedicated mounted volume for KMS data
+    /etc/default/minkms    # Environment variables for MinKMS process
+    ```
+
+    Use `chown` and `chmod` to restrict access to these directories to only the `minkms-user` user and group.
+
+    ```bash
+    sudo chown -R minkms-user:minkms-user /etc/minkms
+    sudo chmod -R 750 /etc/minkms
+    sudo chown -R minkms-user:minkms-user /mnt/minio-kms
+    sudo chmod -R 750 /mnt/minio-kms
+    sudo chown -R minkms-user:minkms-user /etc/default/minkms
+    sudo chmod -R 750 /etc/default/minkms
+    ```
+
+3.  Download the MinIO KMS binary
+    ```bash
+    curl --progress-bar --retry 10 -L https://dl.min.io/aistor/minkms/release/linux-amd64/minkms -o minkms
+    chmod +x ./minkms
+    sudo mv ./minkms /usr/local/bin/
+    ```
+
+    You can validate the installation by running `minkms help`
+
+4. Add the TLS certificates and Certificate Authorities
+
+    Place the TLS private key `private.key` and public certificate `public.crt` in the `/etc/minkms/certs` directory
+
+    ```bash
+    sudo cp -r /opt/minio/certs /etc/minkms/
+    sudo chmod -R 600 /etc/minkms/certs
+    ```
+
+5. Create a service file for MinIO KMS
+
+    Create a new `minkms.service` file at `/usr/lib/systemd/system/minkms.service` with the following content:
+
+    ```bash
+    sudo touch /usr/lib/systemd/system/minkms.service
+    sudo nano /usr/lib/systemd/system/minkms.service
+    ```
+
+    ```bash
+    [Unit]
+    Description=MinKMS
+    Documentation=https://docs.min.io/enterprise/aistor-key-manager
+    Wants=network-online.target
+    After=network-online.target
+    AssertFileIsExecutable=/usr/local/bin/minkms
+    [Service]
+    WorkingDirectory=/usr/local
+    User=minkms-user
+    Group=minkms-user
+    ProtectProc=invisible
+    EnvironmentFile=-/etc/default/minkms
+    ExecStart=/usr/local/bin/minkms server $MINIO_KMS_VOLUME $MINIO_KMS_OPTS
+    # Let systemd restart this service always
+    Restart=always
+    # Specifies the maximum file descriptor number that can be opened by this process
+    LimitNOFILE=65536
+    # Specifies the maximum number of threads this process can create
+    TasksMax=infinity
+    # Disable timeout logic and wait until process is stopped
+    TimeoutStopSec=infinity
+    SendSIGKILL=no
+    [Install]
+    WantedBy=multi-user.target
+    # Built for ${project.name}-${project.version} (${project.name})
+    ```
+
+6. Generate an HSM Key
+    MinIO KMS uses a hardware/software security module (HSM) for en/decrypting the keystore and for authenticating internode cals
+    ```bash
+    minkms --soft-hsm
+    ```
+    ```bash
+    # output
+    Your software HSM key:
+
+        cd hsm:aes256:uPG5uo2QPzPgygxIOWO8h/AqBgtORlViR3WP32qS0xo=
+
+    This is the only time it is shown. Keep it secret and secure!
+
+    The HSM protects your KMS cluster as unseal mechanism by decrypting the
+    internal root encryption key ring.
+    Please store it at a secure location. For example, your password manager.
+    Without your HSM key you cannot decrypt any data within your KMS cluster.
+    ```
+
+7. Build an environment file for MinIO KMS
+    Open the file at `/etc/default/minkms` and enter the following content:
+    ```bash
+    cd /etc/default/
+    sudo gedit minkms
+    ```
+    ```bash
+    MINIO_KMS_HSM_KEY=hsm:aes256:KEYVALUE
+    MINIO_KMS_VOLUME=/mnt/minio-kms
+    MINIO_KMS_OPTS="--config /etc/minkms/config.yaml"
+    ```
+
+8. Create a file at `/etc/minkms/config.yaml` with the following content:
+    ```bash
+    version: v1
+    tls:
+    certs:
+        - key: /etc/minkms/certs/private.key
+        cert: /etc/minkms/certs/public.crt
+    ca: /etc/minkms/certs/CAs
+    datastore:
+    path: /mnt/minio-kms
+    ```
+
+    ```bash
+    sudo chmod 750 /etc/minkms
+    sudo chmod 640 /etc/minkms/config.yaml
+    ```
+
+9. Enable and start the MinIO KMS service   
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl enable minkms
+    sudo systemctl start minkms
+    ```
+
+    ```bash
+    # validate the status and output of MinIO KMS
+    sudo journalctl -u minkms
+    ```
+
+    You can also filter the `journactl` output to only return the `root` or superadmin API Key:
+
+    ```bash
+    journalctl -u minkms -g "API Key" -o cat --output-fields "MESSAGE"
+    ```
+
+10. Create an enclave and identity for AIStor Object Store
+
+    Each Object Store requires an enclave and identity for accessing MinIO KMS and performing cryptographic operations.
+
+    ```bash
+    export MINIO_KMS_SERVER=127.0.0.1:7373
+    minkms add-enclave -k -a k1:`API key` object-store-name
+    minkms add-identity -k -a k1:`API key` --enclave object-store-name --admin
+    ```
+    `API key`: get from previous step
+    
+    Change the `object-store-name` to reflect the name or label you want to associate with the object store.
+
+
+## Server Side Encryption with MinIO KMS
+
+1. Add MinIO KMS settings to the environment file
+
+    Open the `/etc/default/minio`
+    ```bash
+    sudo gedit /etc/default/minio
+    ```
+    
+    Add following line
+    ```bash
+    MINIO_KMS_SERVER=""
+    MINIO_KMS_SSE_KEY=""
+    MINIO_KMS_ENCLAVE=""
+    MINIO_KMS_API_KEY=""
+    ```
+
+    How to check
+    ```bash
+    # MINIO_KMS_SERVER
+    sudo systemctl status minkms
+
+    # MINIO_KMS_API_KEY
+    journalctl -u minkms -g "API Key" -o cat --output-fields "MESSAGE"
+
+    # MINIO_KMS_ENCLAVE
+    minkms ls-enclave   
+    ```
+
+2. Trust certificate and restart 
+
+    ```bash
+    sudo cp /opt/minio/certs/public.crt /usr/local/share/ca-certificates/minio-kms.crt
+
+    sudo update-ca-certificates
+
+    sudo systemctl restart minio
+    ```
+
+<!-- ## Key SSE structure
+
+| name  | stored in | description |
+| --- | --- | --- | 
+| master key  | KMS (enclave) |  |
+| KEK | volatile memory | 
+| DEK | object's metadata | -->
+
+## SSE key operation
+```bash
+# create SSE name `key-v1`
+mc admin kms key create myhp key-v1 --json
+```
+```bash
+# remove key with specific version
+minkms rm-key -k -e hp-enclave --version 1 key-v1
+```
+
+```bash
+# list SSE key
+minkms ls-key -e hp-enclave
+# or
+mc admin kms key list myhp/
+```
+
+```bash
+# current used SSE key for specific bucket
+mc encrypt info myhp/b-buck/
+```
+
+```bash
+# SSE used for object
+mc stat myhp/a-buck/SSE_key.txt
+```
+
+## Ways to enable SSE 
+- Global level
+```bash
+sudo gedit /etc/default/minio 
+# and edit at `MINIO_KMS_SSE_KEY`
+```
+
+- Bucket level
+```bash
+mc encrypt set sse-kms key-v1 myhp/b-buck/
+```
+
+## Key Rotation 
+### Types
+1. Scheduled Rotation (Master Key)
+    - Create new key version
+    - New data: locked by new key
+    - Old data: locked by old key, KMS stores old key to decryp old data only
+
+2. Re-encryption / Batch Rotation (file's key)
+    - Decypt old file with old key and encryp new with new key
+    - All date: use new key
+    - Bucket level: still use old key
+
+### Example
+- Scheduled Rotation
+    ```bash
+    minkms add-key -k -e hp-enclave --version key-v1
+    # view least key version 
+    minkms stat-key -e hp-enclave --json key-v1
+    ```
+
+- Batch Rotation
+    ```bash
+    # create batch file
+    gedit rotate.yaml
+    ```
+
+    copy this into batch file
+
+    ```bash
+    keyrotate:
+    apiVersion: v1
+    # destination bucket
+    bucket: a-buck
+    prefix: ""          
+    encryption:
+        # new key
+        key: key-v1
+    flags:
+        filter:
+        plaintextOnly: false
+        # change only file that used this key
+        kmskey: "object-store-primary-default-key" 
+        retry:
+        attempts: 5
+        delay: "500ms"
+    ```
+
+    ```bash
+    mc batch start myhp <path-to-rotate.yaml>
+    ```

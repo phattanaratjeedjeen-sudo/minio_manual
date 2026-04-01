@@ -1,0 +1,13 @@
+keyrotate:
+  apiVersion: v1
+  bucket: a-buck
+  prefix: ""          
+  encryption:
+    key: key-v1
+  flags:
+    filter:
+      plaintextOnly: false
+      kmskey: "object-store-primary-default-key"
+    retry:
+      attempts: 5
+      delay: "500ms"

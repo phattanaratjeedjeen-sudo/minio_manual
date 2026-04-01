@@ -11,10 +11,10 @@ from minio import Minio
 minio_endpoint = "192.168.1.152:9000" 
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "my-bucket"
+bucket_name = "a-buck"
 
 # Local file to upload
-filename = "ip_note.txt"
+filename = "ip_notes.txt"
 local_file_path = os.path.expanduser(f"~/{filename}")  
 object_name = filename    
 

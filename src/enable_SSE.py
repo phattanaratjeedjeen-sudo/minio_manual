@@ -4,10 +4,10 @@ import urllib3
 import os
 
 # ==================== Configuration ====================
-minio_endpoint = "192.168.1.153:9000"   
+minio_endpoint = "192.168.1.152:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "my-bucket"                
+bucket_name = "a-buck"                
 
 
 # CA certificate configuration
@@ -37,7 +37,7 @@ minio_client = Minio(
 try:
     # 1. Create the Rule object directly (Not SSEConfig.Rule)
     # This specifically targets your KMS master key
-    kms_rule = Rule.new_sse_kms_rule("my-master-key")
+    kms_rule = Rule.new_sse_kms_rule("object-store-primary-default-key")
 
     # 2. Wrap that rule inside the SSEConfig object
     config = SSEConfig(kms_rule)
@@ -47,7 +47,7 @@ try:
         bucket_name=bucket_name,
         config=config
     )
-    print("SSE-KMS enabled successfully using SDK 7.2.20 logic!")
+    print("SSE-KMS enabled successfully")
 
 except Exception as e:
     print(f"Failed to set encryption: {e}")

@@ -7,7 +7,7 @@ import os
 minio_endpoint = "192.168.1.152:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "my-bucket"                
+bucket_name = "a-buck"                
 
 
 # CA certificate configuration
