@@ -7,7 +7,8 @@ import os
 minio_endpoint = "192.168.1.152:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "a-buck"                
+bucket_name = "a-buck"   
+SSE_key = "object-store-primary-default-key"             
 
 
 # CA certificate configuration
@@ -37,7 +38,7 @@ minio_client = Minio(
 try:
     # 1. Create the Rule object directly (Not SSEConfig.Rule)
     # This specifically targets your KMS master key
-    kms_rule = Rule.new_sse_kms_rule("object-store-primary-default-key")
+    kms_rule = Rule.new_sse_kms_rule(SSE_key)
 
     # 2. Wrap that rule inside the SSEConfig object
     config = SSEConfig(kms_rule)

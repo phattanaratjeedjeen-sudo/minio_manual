@@ -530,28 +530,25 @@ mc admin kms key list myhp/
 ```
 
 ```bash
-# current used SSE key for specific bucket
-mc encrypt info myhp/b-buck/
-```
-
-```bash
-# SSE used for object
+# Check current SSE used
 mc stat myhp/a-buck/SSE_key.txt
 ```
 
 ## Ways to enable SSE 
 - Global level
-```bash
-sudo gedit /etc/default/minio 
-# and edit at `MINIO_KMS_SSE_KEY`
-```
+    ```bash
+    sudo gedit /etc/default/minio 
+    # and edit at `MINIO_KMS_SSE_KEY`
+    ```
 
 - Bucket level
-```bash
-mc encrypt set sse-kms key-v1 myhp/b-buck/
-```
+    ```bash
+    mc encrypt set sse-kms key-v1 myhp/b-buck/
+    ```
 
 ## Key Rotation 
+>note:
+>read more information about [Batch Key Rotation](https://docs.min.io/enterprise/aistor-object-store/operations/batch-key-rotation/)
 ### Types
 1. Scheduled Rotation (Master Key)
     - Create new key version

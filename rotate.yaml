@@ -3,11 +3,11 @@ keyrotate:
   bucket: a-buck
   prefix: ""          
   encryption:
-    key: key-v1
+    key: key3
   flags:
     filter:
       plaintextOnly: false
-      kmskey: "object-store-primary-default-key"
+      # kmskey: "key-v1"
     retry:
       attempts: 5
       delay: "500ms"
