@@ -4,15 +4,15 @@ import urllib3
 import os
 
 # ==================== Configuration ====================
-minio_endpoint = "192.168.1.152:9000"   
+minio_endpoint = "192.168.1.153:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "a-buck"   
-SSE_key = "object-store-primary-default-key"             
+bucket_name = "buck1"   
+SSE_key = "key-v1"             
 
 
 # CA certificate configuration
-minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")    
+minio_ca_cert = os.path.expanduser("~/asus-public.crt")    
 
 
 if not os.path.isfile(minio_ca_cert):
@@ -52,4 +52,3 @@ try:
 
 except Exception as e:
     print(f"Failed to set encryption: {e}")
-

@@ -4,14 +4,15 @@ import urllib3
 import os
 
 # ==================== Configuration ====================
-minio_endpoint = "192.168.1.152:9000"   
+minio_endpoint = "192.168.1.153:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
-bucket_name = "a-buck"                
+bucket_name = "buck1"                
 
 
 # CA certificate configuration
-minio_ca_cert = os.path.expanduser("~/minio/certs/public.crt")    
+minio_ca_cert = os.path.expanduser("~/asus-public.crt") 
+print(f"Using CA certificate: {minio_ca_cert}")   
 
 
 if not os.path.isfile(minio_ca_cert):

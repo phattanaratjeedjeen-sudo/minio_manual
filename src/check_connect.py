@@ -9,7 +9,7 @@ import os
 import ssl
 
 # ==================== Configuration ====================
-minio_endpoint = "192.168.1.152:9000"   
+minio_endpoint = "192.168.1.153:9000"   
 access_key = "minioadmin"
 secret_key = "minioadmin"
 
