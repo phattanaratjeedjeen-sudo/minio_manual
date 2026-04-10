@@ -254,7 +254,7 @@
 
     ```bash
     sudo chmod 750 /etc/minkms
-    sudo chmod 640 /etc/minkms/config.yaml
+    sudo chmod 750 /etc/minkms/config.yaml
     ```
 
 9. Enable and start the MinIO KMS service   
