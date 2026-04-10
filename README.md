@@ -244,12 +244,12 @@
     ```bash
     version: v1
     tls:
-    certs:
+      certs:
         - key: /etc/minkms/certs/private.key
           cert: /etc/minkms/certs/public.crt
-    ca: /etc/minkms/certs/CAs
+      ca: /etc/minkms/certs/CAs
     datastore:
-    path: /mnt/minio-kms
+      path: /mnt/minio-kms
     ```
 
     ```bash
