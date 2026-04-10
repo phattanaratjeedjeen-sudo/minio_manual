@@ -246,7 +246,7 @@
     tls:
     certs:
         - key: /etc/minkms/certs/private.key
-        cert: /etc/minkms/certs/public.crt
+          cert: /etc/minkms/certs/public.crt
     ca: /etc/minkms/certs/CAs
     datastore:
     path: /mnt/minio-kms
